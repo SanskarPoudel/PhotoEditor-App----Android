@@ -9,6 +9,8 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,9 +19,13 @@ import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -70,11 +76,15 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_PICK_IMAGE = 12345;
 
+    private ImageView imageView;
+
     private void init(){
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
             StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
             StrictMode.setVmPolicy(builder.build());
         }
+
+        imageView = findViewById(R.id.imageView);
 
         if(!MainActivity.this.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)){
             findViewById(R.id.takePhotoButton).setVisibility(View.GONE);
@@ -129,6 +139,13 @@ public class MainActivity extends AppCompatActivity {
    }
 
    private boolean editMode = false;
+   private Bitmap bitmap;
+   private int width = 0;
+   private int height = 0;
+   private static  final int MAX_PIXEL_COUNT = 2048;
+
+   private int[] pixels;
+   private int pixelCount = 0;
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data){
@@ -162,7 +179,61 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.welcomeScreen).setVisibility(View.GONE);
         findViewById(R.id.editScreen).setVisibility(View.VISIBLE);
 
-        dialog.cancel();
+        new Thread(){
+            public  void run(){
+                bitmap = null;
+                final BitmapFactory.Options bmpOptions = new BitmapFactory.Options();
+                bmpOptions.inBitmap = bitmap;
+                bmpOptions.inJustDecodeBounds = true;
+                try(InputStream input = getContentResolver().openInputStream(imageUri)){
+                    bitmap = BitmapFactory.decodeStream(input,null,bmpOptions);
+                }
+                catch (IOException e){
+                    e.printStackTrace();
+                }
+                bmpOptions.inJustDecodeBounds = false;
+                width = bmpOptions.outWidth;
+                height= bmpOptions.outHeight;
+                int resizeScale = 2;
+                if(width>MAX_PIXEL_COUNT){
+                    resizeScale = width/MAX_PIXEL_COUNT;
+                }
+                else if(height>MAX_PIXEL_COUNT){
+                    resizeScale = height/MAX_PIXEL_COUNT;
+                }
+                if(width/resizeScale >MAX_PIXEL_COUNT || height/resizeScale >MAX_PIXEL_COUNT){
+                    resizeScale++;
+                }
+                bmpOptions.inSampleSize = resizeScale;
+                InputStream input = null;
+                try{
+                    input = getContentResolver().openInputStream(imageUri);
+                }
+                catch(FileNotFoundException e){
+                    e.printStackTrace();
+                    recreate();
+                    return;
+                }
+                bitmap = BitmapFactory.decodeStream(input,null,bmpOptions);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        imageView.setImageBitmap(bitmap);
+                        dialog.cancel();
+                    }
+                });
+                width= bitmap.getWidth();
+                height = bitmap.getHeight();
+                bitmap = bitmap.copy(Bitmap.Config.ARGB_8888,true);
+
+                pixelCount = width*height;
+                pixels = new int[pixelCount];
+                bitmap.getPixels(pixels,0,width,0,0,width,height);
+
+
+            }
+        }.start();
+
 
    }
 }
