@@ -55,6 +55,14 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    static{
+        System.loadLibrary("photoEditor");
+    }
+
+    private static native void blackAndWhite(int[] pixels, int width, int height);
+
+
+
     @Override
     protected  void  onResume(){
         super.onResume();
@@ -123,6 +131,27 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
+        final Button blackAndWhiteButton = findViewById(R.id.blackAndWhite);
+        blackAndWhiteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new Thread(){
+                    public void run(){
+                      blackAndWhite(pixels,width,height);
+                        bitmap.setPixels(pixels,0,width,0,0,width,height);
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                imageView.setImageBitmap(bitmap);
+                            }
+                        });
+                    }
+                }.start();
+            }
+        });
+
     }
 
     private static  final int REQUEST_IMAGE_CAPTURE = 1012;
