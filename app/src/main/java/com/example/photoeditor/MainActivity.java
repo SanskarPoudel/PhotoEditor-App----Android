@@ -5,7 +5,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -24,6 +26,7 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -86,26 +89,26 @@ public class MainActivity extends AppCompatActivity {
 
     private ImageView imageView;
 
-    private void init(){
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
+    private void init() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
             StrictMode.setVmPolicy(builder.build());
         }
 
         imageView = findViewById(R.id.imageView);
 
-        if(!MainActivity.this.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)){
+        if (!MainActivity.this.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
             findViewById(R.id.takePhotoButton).setVisibility(View.GONE);
         }
 
-        final Button selectImageButton  = findViewById(R.id.selectImageButton);
+        final Button selectImageButton = findViewById(R.id.selectImageButton);
         selectImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("image/*");
                 final Intent pickIntent = new Intent(Intent.ACTION_PICK);
-                pickIntent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,"image/*");
+                pickIntent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
                 final Intent chooserIntent = Intent.createChooser(intent, "Select Image");
                 startActivityForResult(chooserIntent, REQUEST_PICK_IMAGE);
             }
@@ -115,19 +118,18 @@ public class MainActivity extends AppCompatActivity {
         takePhotoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-               final Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                   if(takePictureIntent.resolveActivity(getPackageManager())!=null){
-                       final File photoFile = createImageFile();
-                       imageUri = Uri.fromFile(photoFile);
-                       final SharedPreferences myPrefs = getSharedPreferences(appId,0);
-                       myPrefs.edit().putString("path",photoFile.getAbsolutePath()).apply();
-                       takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,imageUri);
-                       startActivityForResult(takePictureIntent,REQUEST_IMAGE_CAPTURE);
-                   }
-                   else{
-                       Toast.makeText(MainActivity.this,"Your camera app is not compatible",
-                               Toast.LENGTH_SHORT).show();
-                   }
+                final Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                    final File photoFile = createImageFile();
+                    imageUri = Uri.fromFile(photoFile);
+                    final SharedPreferences myPrefs = getSharedPreferences(appId, 0);
+                    myPrefs.edit().putString("path", photoFile.getAbsolutePath()).apply();
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+                    startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+                } else {
+                    Toast.makeText(MainActivity.this, "Your camera app is not compatible",
+                            Toast.LENGTH_SHORT).show();
+                }
 
             }
         });
@@ -136,10 +138,10 @@ public class MainActivity extends AppCompatActivity {
         blackAndWhiteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new Thread(){
-                    public void run(){
-                      blackAndWhite(pixels,width,height);
-                        bitmap.setPixels(pixels,0,width,0,0,width,height);
+                new Thread() {
+                    public void run() {
+                        blackAndWhite(pixels, width, height);
+                        bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
 
                         runOnUiThread(new Runnable() {
                             @Override
@@ -151,6 +153,36 @@ public class MainActivity extends AppCompatActivity {
                 }.start();
             }
         });
+
+
+        final Button saveImageButton = findViewById(R.id.save);
+        saveImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setMessage("Save image to gallery?");
+                builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int which) {
+                        if (which == DialogInterface.BUTTON_POSITIVE) {
+                            final File outputFile = createImageFile();
+                            try (FileOutputStream out = new FileOutputStream(outputFile)) {
+                                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                                Uri imageUri = Uri.parse("file://" + outputFile.getAbsolutePath());
+                                sendBroadcast(new Intent(Intent.ACTION_PICK, imageUri));
+                                Toast.makeText(MainActivity.this, "Image was saved", Toast.LENGTH_SHORT).show();
+                            } catch (IOException e) {
+                                Toast.makeText(MainActivity.this, "Error saving image", Toast.LENGTH_SHORT).show();
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+                builder.setNegativeButton("No", null);
+                builder.show();
+            }
+        });
+
 
     }
 

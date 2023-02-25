@@ -64,10 +64,11 @@
                 android:text="B/W"/>
 
             <Button
+                android:id="@+id/save"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="feature2"/>
+                android:text="Save Image"/>
 
 
         </LinearLayout>
