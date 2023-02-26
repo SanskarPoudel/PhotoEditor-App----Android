@@ -52,7 +52,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:paddingHorizontal="20sp"
-            android:layout_height="50dp"
+            android:layout_height="70dp"
             android:orientation="horizontal">
 
             <Button
@@ -62,6 +62,15 @@
                 android:layout_marginEnd="10sp"
                 android:layout_weight="1"
                 android:text="B/W"/>
+
+            <Button
+                android:id="@+id/negative"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="10sp"
+                android:layout_weight="1"
+                android:text="Negative"/>
+
 
             <Button
                 android:id="@+id/save"

@@ -64,6 +64,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static native void blackAndWhite(int[] pixels, int width, int height);
 
+    private static native void negative(int[] pixels,int width, int height);
+
 
 
     @Override
@@ -141,6 +143,26 @@ public class MainActivity extends AppCompatActivity {
                 new Thread() {
                     public void run() {
                         blackAndWhite(pixels, width, height);
+                        bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                imageView.setImageBitmap(bitmap);
+                            }
+                        });
+                    }
+                }.start();
+            }
+        });
+
+        final Button negativeButton = findViewById(R.id.negative);
+        negativeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new Thread() {
+                    public void run() {
+                        negative(pixels, width, height);
                         bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
 
                         runOnUiThread(new Runnable() {
