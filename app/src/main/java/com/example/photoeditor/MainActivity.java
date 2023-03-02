@@ -66,6 +66,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static native void negative(int[] pixels,int width, int height);
 
+    private  static native  void autoContrast(int[] pixels,int width,int height);
+
 
 
     @Override
@@ -136,6 +138,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
         final Button blackAndWhiteButton = findViewById(R.id.blackAndWhite);
         blackAndWhiteButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -176,6 +179,24 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        final Button contrastButton  = findViewById(R.id.contrast);
+        contrastButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new Thread(){
+                    public  void  run(){
+                        autoContrast(pixels,width,height);
+                        bitmap.setPixels(pixels,0,width,0,0,width,height);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                               imageView.setImageBitmap(bitmap);
+                            }
+                        });
+                    }
+                }.start();
+            }
+        });
 
         final Button saveImageButton = findViewById(R.id.save);
         saveImageButton.setOnClickListener(new View.OnClickListener() {
